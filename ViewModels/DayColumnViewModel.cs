@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
@@ -25,6 +26,9 @@ namespace TimeTableApp.ViewModels
                 }
             }
         }
+
+        // 0 = Monday, 1 = Tuesday, ... 6 = Sunday
+        public int DayIndex { get; }
 
         public ObservableCollection<DayTaskStatus> DayTasks { get; } = new ObservableCollection<DayTaskStatus>();
 
@@ -59,9 +63,12 @@ namespace TimeTableApp.ViewModels
             }
         }
 
-        public DayColumnViewModel(string dayName)
+        public event Action? DataChanged;
+
+        public DayColumnViewModel(string dayName, int dayIndex)
         {
             DayName = dayName;
+            DayIndex = dayIndex;
 
             AddRowCommand = new RelayCommand(AddBlankTaskRow);
             RemoveRowCommand = new RelayCommand(RemoveRowFromParameter);
@@ -69,9 +76,13 @@ namespace TimeTableApp.ViewModels
             DayTasks.CollectionChanged += OnDayTasksCollectionChanged;
         }
 
-        public void AddTask(TaskModel task)
+        public void AddTask(TaskModel task, bool isDone = false)
         {
-            var status = new DayTaskStatus(task);
+            var status = new DayTaskStatus(task)
+            {
+                IsDone = isDone
+            };
+
             status.PropertyChanged += OnTaskStatusChanged;
             DayTasks.Add(status);
             RefreshTotals();
@@ -102,6 +113,19 @@ namespace TimeTableApp.ViewModels
             }
 
             RefreshTotals();
+            NotifyDataChanged();
+        }
+
+        public void ClearAllTasks()
+        {
+            foreach (var task in DayTasks)
+            {
+                task.PropertyChanged -= OnTaskStatusChanged;
+            }
+
+            DayTasks.Clear();
+            SelectedDayTask = null;
+            RefreshTotals();
         }
 
         private void RemoveRowFromParameter(object? parameter)
@@ -115,6 +139,7 @@ namespace TimeTableApp.ViewModels
         private void OnDayTasksCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             RefreshTotals();
+            NotifyDataChanged();
         }
 
         private void OnTaskStatusChanged(object? sender, PropertyChangedEventArgs e)
@@ -124,6 +149,7 @@ namespace TimeTableApp.ViewModels
                 e.PropertyName == nameof(DayTaskStatus.TaskName))
             {
                 RefreshTotals();
+                NotifyDataChanged();
             }
         }
 
@@ -140,6 +166,11 @@ namespace TimeTableApp.ViewModels
             OnPropertyChanged(nameof(TotalCompletedPoints));
             OnPropertyChanged(nameof(TotalPossiblePoints));
             OnPropertyChanged(nameof(ProgressValue));
+        }
+
+        private void NotifyDataChanged()
+        {
+            DataChanged?.Invoke();
         }
     }
 }

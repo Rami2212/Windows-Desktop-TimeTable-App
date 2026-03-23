@@ -1,6 +1,3 @@
 <Solution>
-  <Folder Name="/Services/">
-    <File Path="SqliteTaskStore.cs" />
-  </Folder>
   <Project Path="TimeTableApp.csproj" />
 </Solution>
