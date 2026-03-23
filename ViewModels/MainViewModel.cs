@@ -56,7 +56,7 @@ namespace TimeTableApp.ViewModels
 
                     if (rowsForDay.Count == 0)
                     {
-                        day.EnsureMinimumRows(10);
+                        day.EnsureMinimumRows(1);
                         continue;
                     }
 
@@ -70,8 +70,6 @@ namespace TimeTableApp.ViewModels
 
                         day.AddTask(task, row.IsDone);
                     }
-
-                    day.EnsureMinimumRows(10);
                 }
             }
             finally
