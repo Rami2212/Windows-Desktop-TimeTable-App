@@ -9,8 +9,31 @@ namespace TimeTableApp.Models
 
         public TaskModel Task { get; }
 
-        public string TaskName => Task.Name;
-        public int Points => Task.Points;
+        public string TaskName
+        {
+            get => Task.Name;
+            set
+            {
+                if (Task.Name != value)
+                {
+                    Task.Name = value;
+                    OnPropertyChanged(nameof(TaskName));
+                }
+            }
+        }
+
+        public int Points
+        {
+            get => Task.Points;
+            set
+            {
+                if (Task.Points != value)
+                {
+                    Task.Points = value;
+                    OnPropertyChanged(nameof(Points));
+                }
+            }
+        }
 
         public bool IsDone
         {
@@ -29,10 +52,17 @@ namespace TimeTableApp.Models
         {
             Task = task;
 
-            Task.PropertyChanged += (_, __) =>
+            Task.PropertyChanged += (_, e) =>
             {
-                OnPropertyChanged(nameof(TaskName));
-                OnPropertyChanged(nameof(Points));
+                if (e.PropertyName == nameof(Task.Name))
+                {
+                    OnPropertyChanged(nameof(TaskName));
+                }
+
+                if (e.PropertyName == nameof(Task.Points))
+                {
+                    OnPropertyChanged(nameof(Points));
+                }
             };
         }
 
