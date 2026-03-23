@@ -19,6 +19,7 @@ namespace TimeTableApp.Models
                 }
             }
         }
+
         public int Points
         {
             get => _points;

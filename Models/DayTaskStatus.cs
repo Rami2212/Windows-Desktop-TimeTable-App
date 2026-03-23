@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using TaskModel = TimeTableApp.Models.Task;
 
 namespace TimeTableApp.Models
 {
@@ -6,7 +7,7 @@ namespace TimeTableApp.Models
     {
         private bool _isDone;
 
-        public Task Task { get; }
+        public TaskModel Task { get; }
 
         public string TaskName => Task.Name;
         public int Points => Task.Points;
@@ -24,11 +25,10 @@ namespace TimeTableApp.Models
             }
         }
 
-        public DayTaskStatus(Task task)
+        public DayTaskStatus(TaskModel task)
         {
             Task = task;
 
-            // When task name or points change, notify the UI
             Task.PropertyChanged += (_, __) =>
             {
                 OnPropertyChanged(nameof(TaskName));

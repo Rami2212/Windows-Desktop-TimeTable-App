@@ -1,12 +1,13 @@
-﻿using TimeTableApp.Models;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using TimeTableApp.ViewModels;
+using TimeTableApp.Models;
 
 namespace TimeTableApp.ViewModels
 {
+    using TaskModel = TimeTableApp.Models.Task;
+
     public class DayColumnViewModel : BaseViewModel
     {
         private string _dayName = string.Empty;
@@ -41,11 +42,10 @@ namespace TimeTableApp.ViewModels
         public DayColumnViewModel(string dayName)
         {
             DayName = dayName;
-
             DayTasks.CollectionChanged += OnDayTasksCollectionChanged;
         }
 
-        public void AddTask(Models.Task task)
+        public void AddTask(TaskModel task)
         {
             var status = new DayTaskStatus(task);
             status.PropertyChanged += OnTaskStatusChanged;
@@ -53,7 +53,7 @@ namespace TimeTableApp.ViewModels
             RefreshTotals();
         }
 
-        public void RemoveTask(Models.Task task)
+        public void RemoveTask(TaskModel task)
         {
             var existing = DayTasks.FirstOrDefault(x => x.Task == task);
             if (existing != null)
