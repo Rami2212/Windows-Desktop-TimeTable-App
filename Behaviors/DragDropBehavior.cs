@@ -104,7 +104,12 @@ namespace TimeTableApp.Behaviors
 
             host.SetValue(IsDraggingFrameworkProperty, true);
 
-            var data = new DataObject(typeof(DayTaskStatus), dragItem);
+            var vm = ResolveViewModel(host);
+            if (vm == null) return;
+
+            var data = new DataObject();
+            data.SetData(typeof(DayTaskStatus), dragItem);
+            data.SetData(typeof(DayColumnViewModel), vm);
             DragDrop.DoDragDrop(host, data, DragDropEffects.Move);
 
             // Reset after drop completes
@@ -142,23 +147,32 @@ namespace TimeTableApp.Behaviors
             if (sender is not FrameworkElement host) return;
             if (!e.Data.GetDataPresent(typeof(DayTaskStatus))) return;
 
-            var dragged = (DayTaskStatus)e.Data.GetData(typeof(DayTaskStatus));
-            var target = GetItemFromSource(e.OriginalSource as DependencyObject, host);
+            var dragged = e.Data.GetData(typeof(DayTaskStatus)) as DayTaskStatus;
+            var sourceVm = e.Data.GetData(typeof(DayColumnViewModel)) as DayColumnViewModel;
+            var targetVm = ResolveViewModel(host);
+            if (dragged == null || sourceVm == null || targetVm == null) return;
 
-            if (target == null || ReferenceEquals(dragged, target)) return;
+            var targetItem = GetItemFromSource(e.OriginalSource as DependencyObject, host);
+            int targetIndex = targetItem != null ? targetVm.DayTasks.IndexOf(targetItem)
+                                                 : targetVm.DayTasks.Count;
 
-            // Resolve the DayColumnViewModel from the host's DataContext
-            DayColumnViewModel? vm = ResolveViewModel(host);
-            if (vm == null) return;
-
-            int fromIdx = vm.DayTasks.IndexOf(dragged);
-            int toIdx = vm.DayTasks.IndexOf(target);
-
-            if (fromIdx < 0 || toIdx < 0) return;
-
-            vm.DayTasks.Move(fromIdx, toIdx);
-            vm.NotifyMoved();
-
+            if (ReferenceEquals(sourceVm, targetVm))
+            {
+                int fromIdx = sourceVm.DayTasks.IndexOf(dragged);
+                if (fromIdx < 0 || targetIndex < 0) return;
+                if (fromIdx < targetIndex) targetIndex--; // adjust after removal
+                sourceVm.DayTasks.Move(fromIdx, targetIndex);
+                sourceVm.NotifyMoved();
+            }
+            else
+            {
+                sourceVm.DayTasks.Remove(dragged);
+                if (targetIndex < 0 || targetIndex > targetVm.DayTasks.Count)
+                    targetIndex = targetVm.DayTasks.Count;
+                targetVm.DayTasks.Insert(targetIndex, dragged);
+                sourceVm.NotifyMoved();
+                targetVm.NotifyMoved();
+            }
             e.Handled = true;
         }
 
