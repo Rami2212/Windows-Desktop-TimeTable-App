@@ -8,6 +8,7 @@ namespace TimeTableApp.Data
     public class TimeTableDbContext : DbContext
     {
         public DbSet<PersistedTaskItem> PersistedTaskItems => Set<PersistedTaskItem>();
+        public DbSet<PersistedWeekLabel> PersistedWeekLabels => Set<PersistedWeekLabel>();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -30,10 +31,16 @@ namespace TimeTableApp.Data
             modelBuilder.Entity<PersistedTaskItem>(entity =>
             {
                 entity.HasKey(x => x.Id);
-
                 entity.HasIndex(x => new { x.DayIndex, x.DisplayOrder });
-
                 entity.Property(x => x.TaskName).IsRequired();
+            });
+
+            modelBuilder.Entity<PersistedWeekLabel>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.LabelKey).IsUnique();
+                entity.Property(x => x.LabelKey).IsRequired();
+                entity.Property(x => x.LabelValue).IsRequired();
             });
         }
     }

@@ -15,6 +15,10 @@ namespace TimeTableApp.ViewModels
 
         public ObservableCollection<DayColumnViewModel> Days { get; } = new ObservableCollection<DayColumnViewModel>();
 
+        public DayColumnViewModel ToDoColumn { get; }
+
+        public WeeklyStatsViewModel WeeklyStats { get; } = new WeeklyStatsViewModel();
+
         public MainViewModel()
         {
             _sqliteDataService.EnsureDatabaseCreated();
@@ -24,18 +28,22 @@ namespace TimeTableApp.ViewModels
             for (int i = 0; i < 7; i++)
             {
                 var currentDate = startOfWeek.AddDays(i);
-
-                // UI label only. Persistence still uses DayIndex.
                 var dayLabel = $"{currentDate:dddd} - {currentDate:dd}";
-
-                var dayViewModel = new DayColumnViewModel(dayLabel, i);
-                dayViewModel.DataChanged += OnDayDataChanged;
-
-                Days.Add(dayViewModel);
+                var dayVm = new DayColumnViewModel(dayLabel, i);
+                dayVm.DataChanged += OnDayDataChanged;
+                Days.Add(dayVm);
             }
+
+            ToDoColumn = new DayColumnViewModel("To Do", dayIndex: 7, isToDoColumn: true);
+            ToDoColumn.DataChanged += OnDayDataChanged;
+
+            // Wire up weekly-stats label saving
+            WeeklyStats.LabelsChanged += SaveWeekLabels;
 
             LoadSavedData();
         }
+
+        // ── Loading ──────────────────────────────────────────────────────────
 
         private void LoadSavedData()
         {
@@ -45,12 +53,13 @@ namespace TimeTableApp.ViewModels
             {
                 var savedRows = _sqliteDataService.LoadAllDays();
 
+                // Day columns
                 foreach (var day in Days)
                 {
                     day.ClearAllTasks();
 
                     var rowsForDay = savedRows
-                        .Where(x => x.DayIndex == day.DayIndex)
+                        .Where(x => !x.IsToDoColumn && x.DayIndex == day.DayIndex)
                         .OrderBy(x => x.DisplayOrder)
                         .ToList();
 
@@ -62,31 +71,65 @@ namespace TimeTableApp.ViewModels
 
                     foreach (var row in rowsForDay)
                     {
-                        var task = new TaskModel
-                        {
-                            Name = row.TaskName,
-                            Points = row.Points
-                        };
-
+                        var task = new TaskModel { Name = row.TaskName, Points = row.Points };
                         day.AddTask(task, row.IsDone);
                     }
                 }
+
+                // To Do column
+                ToDoColumn.ClearAllTasks();
+                var toDoRows = savedRows
+                    .Where(x => x.IsToDoColumn)
+                    .OrderBy(x => x.DisplayOrder)
+                    .ToList();
+
+                if (toDoRows.Count == 0)
+                    ToDoColumn.EnsureMinimumRows(1);
+                else
+                    foreach (var row in toDoRows)
+                    {
+                        var task = new TaskModel { Name = row.TaskName, Points = row.Points };
+                        ToDoColumn.AddTask(task, row.IsDone);
+                    }
+
+                // Week labels
+                var labels = _sqliteDataService.LoadWeekLabels();
+                WeeklyStats.DayLabel = labels.TryGetValue("Day", out var d) ? d : string.Empty;
+                WeeklyStats.WeekLabel = labels.TryGetValue("Week", out var w) ? w : string.Empty;
+                WeeklyStats.MonthLabel = labels.TryGetValue("Month", out var m) ? m : string.Empty;
             }
             finally
             {
                 _isLoadingData = false;
             }
 
+            RefreshWeeklyStats();
             SaveAllDays();
         }
+
+        // ── Event handlers ───────────────────────────────────────────────────
 
         private void OnDayDataChanged()
         {
             if (_isLoadingData || _isSavingData)
                 return;
 
+            RefreshWeeklyStats();
             SaveAllDays();
         }
+
+        // ── Stats ────────────────────────────────────────────────────────────
+
+        private void RefreshWeeklyStats()
+        {
+            int total = Days.Sum(d => d.TotalPossiblePoints);
+            int completed = Days.Sum(d => d.TotalCompletedPoints);
+
+            WeeklyStats.WeeklyTotalPoints = total;
+            WeeklyStats.WeeklyCompletedPoints = completed;
+        }
+
+        // ── Persistence ──────────────────────────────────────────────────────
 
         private void SaveAllDays()
         {
@@ -94,16 +137,25 @@ namespace TimeTableApp.ViewModels
                 return;
 
             _isSavingData = true;
-
             try
             {
-                _sqliteDataService.SaveAllDays(Days);
+                _sqliteDataService.SaveAllDays(Days, ToDoColumn);
             }
             finally
             {
                 _isSavingData = false;
             }
         }
+
+        private void SaveWeekLabels()
+        {
+            _sqliteDataService.SaveWeekLabels(
+                WeeklyStats.DayLabel,
+                WeeklyStats.WeekLabel,
+                WeeklyStats.MonthLabel);
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────────────
 
         private static DateTime GetStartOfWeek(DateTime date, DayOfWeek startOfWeek)
         {
