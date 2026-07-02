@@ -16,6 +16,7 @@ namespace TimeTableApp.Services
 
             // Existing column patch
             try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedTaskItems ADD COLUMN IsToDoColumn INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedTaskItems ADD COLUMN IsPriority INTEGER NOT NULL DEFAULT 0"); } catch { }
 
             // Ensure new table exists
             db.Database.ExecuteSqlRaw(@"
@@ -24,6 +25,23 @@ namespace TimeTableApp.Services
                     LabelKey TEXT NOT NULL UNIQUE,
                     LabelValue TEXT NOT NULL
                 )");
+
+            db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS PersistedWorkQueueCells (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    RowIndex INTEGER NOT NULL,
+                    ColumnIndex INTEGER NOT NULL,
+                    Value TEXT NOT NULL DEFAULT '',
+                    UNIQUE(RowIndex, ColumnIndex)
+                )");
+
+            db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS PersistedDayTimers (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    DayIndex INTEGER NOT NULL UNIQUE,
+                    ElapsedMilliseconds INTEGER NOT NULL DEFAULT 0
+                )");
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN ElapsedMilliseconds INTEGER NOT NULL DEFAULT 0"); } catch { }
         }
 
         public List<PersistedTaskItem> LoadAllDays()
@@ -42,6 +60,25 @@ namespace TimeTableApp.Services
 
             return db.PersistedWeekLabels
                 .ToDictionary(x => x.LabelKey, x => x.LabelValue);
+        }
+
+        public List<PersistedWorkQueueCell> LoadWorkQueueCells()
+        {
+            using var db = new TimeTableDbContext();
+
+            return db.PersistedWorkQueueCells
+                .OrderBy(x => x.RowIndex)
+                .ThenBy(x => x.ColumnIndex)
+                .ToList();
+        }
+
+        public List<PersistedDayTimer> LoadDayTimers()
+        {
+            using var db = new TimeTableDbContext();
+
+            return db.PersistedDayTimers
+                .OrderBy(x => x.DayIndex)
+                .ToList();
         }
 
         public void SaveWeekLabels(string dayLabel, string weekLabel, string monthLabel)
@@ -83,6 +120,7 @@ namespace TimeTableApp.Services
                         TaskName = row.TaskName ?? string.Empty,
                         Points = row.Points,
                         IsDone = row.IsDone,
+                        IsPriority = row.IsPriority,
                         IsToDoColumn = false
                     });
                 }
@@ -98,11 +136,50 @@ namespace TimeTableApp.Services
                     TaskName = row.TaskName ?? string.Empty,
                     Points = row.Points,
                     IsDone = row.IsDone,
+                    IsPriority = row.IsPriority,
                     IsToDoColumn = true
                 });
             }
 
             db.PersistedTaskItems.AddRange(rowsToSave);
+            db.SaveChanges();
+        }
+
+        public void SaveWorkQueueCells(IEnumerable<WorkQueueCellViewModel> cells)
+        {
+            using var db = new TimeTableDbContext();
+
+            var existingCells = db.PersistedWorkQueueCells.ToList();
+            if (existingCells.Count > 0)
+                db.PersistedWorkQueueCells.RemoveRange(existingCells);
+
+            db.PersistedWorkQueueCells.AddRange(
+                cells.Select(cell => new PersistedWorkQueueCell
+                {
+                    RowIndex = cell.RowIndex,
+                    ColumnIndex = cell.ColumnIndex,
+                    Value = cell.Value ?? string.Empty
+                }));
+
+            db.SaveChanges();
+        }
+
+        public void SaveDayTimers(IEnumerable<DayColumnViewModel> days)
+        {
+            using var db = new TimeTableDbContext();
+
+            var existingTimers = db.PersistedDayTimers.ToList();
+            if (existingTimers.Count > 0)
+                db.PersistedDayTimers.RemoveRange(existingTimers);
+
+            db.PersistedDayTimers.AddRange(
+                days.Where(day => !day.IsToDoColumn)
+                    .Select(day => new PersistedDayTimer
+                    {
+                        DayIndex = day.DayIndex,
+                        ElapsedMilliseconds = (long)day.ElapsedWorkTime.TotalMilliseconds
+                    }));
+
             db.SaveChanges();
         }
     }

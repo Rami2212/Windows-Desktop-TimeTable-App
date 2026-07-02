@@ -6,6 +6,7 @@ namespace TimeTableApp.Models
     public class DayTaskStatus : INotifyPropertyChanged
     {
         private bool _isDone;
+        private bool _isPriority;
 
         public TaskModel Task { get; }
 
@@ -44,6 +45,19 @@ namespace TimeTableApp.Models
                 {
                     _isDone = value;
                     OnPropertyChanged(nameof(IsDone));
+                }
+            }
+        }
+
+        public bool IsPriority
+        {
+            get => _isPriority;
+            set
+            {
+                if (_isPriority != value)
+                {
+                    _isPriority = value;
+                    OnPropertyChanged(nameof(IsPriority));
                 }
             }
         }
