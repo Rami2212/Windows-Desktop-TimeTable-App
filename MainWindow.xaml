@@ -7,7 +7,7 @@
         xmlns:conv="clr-namespace:TimeTableApp.Converters"
         xmlns:behaviors="clr-namespace:TimeTableApp.Behaviors"
         mc:Ignorable="d"
-        Title="Time Table"
+        Title="Target Table"
         Height="900" Width="1700"
         Icon="/Assets/app.ico"
         MinHeight="700" MinWidth="1200"
@@ -29,6 +29,12 @@
         <SolidColorBrush x:Key="SubtleTextBrush" Color="#6B7280"/>
         <SolidColorBrush x:Key="AccentBrush"     Color="#2563EB"/>
         <SolidColorBrush x:Key="DangerBrush"     Color="#DC2626"/>
+        <LinearGradientBrush x:Key="HeroHeaderBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#1D4ED8" Offset="0"/>
+            <GradientStop Color="#2563EB" Offset="0.55"/>
+            <GradientStop Color="#60A5FA" Offset="1"/>
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="HeroSubtleBrush" Color="#DBEAFE"/>
 
         <!-- ── Shared button styles ──────────────────────────────────────── -->
         <Style x:Key="AddButtonStyle" TargetType="Button">
@@ -384,14 +390,93 @@
 
         <!-- App bar -->
         <Border DockPanel.Dock="Top"
-                Background="{StaticResource ToolbarBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,10">
-            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center"
-                       FontSize="20" FontWeight="SemiBold"
-                       Foreground="{StaticResource TextBrush}"
-                       Text="Time Table"/>
+                Margin="12,12,12,0"
+                CornerRadius="18"
+                Background="{StaticResource HeroHeaderBrush}"
+                Padding="24,20"
+                SnapsToDevicePixels="True">
+            <Grid>
+                <Ellipse Width="180" Height="180"
+                         Fill="#1E40AF"
+                         Opacity="0.18"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Top"
+                         Margin="0,-90,-50,0"/>
+                <Ellipse Width="130" Height="130"
+                         Fill="#93C5FD"
+                         Opacity="0.16"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Bottom"
+                         Margin="0,0,50,-60"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="Target Table"
+                                   FontSize="28"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   TextAlignment="Left"/>
+                        <TextBlock Margin="0,6,0,0"
+                                   FontSize="12"
+                                   Foreground="{StaticResource HeroSubtleBrush}"
+                                   Text="{Binding AppVersion, RelativeSource={RelativeSource AncestorType=Window}, StringFormat=Version {0}}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <Border Width="42" Height="42"
+                                Margin="0,0,10,0"
+                                Background="#22FFFFFF"
+                                BorderBrush="#33FFFFFF"
+                                BorderThickness="1"
+                                CornerRadius="21">
+                            <TextBlock Text="&#xE8FD;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="17"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"/>
+                        </Border>
+                        <Border Width="42" Height="42"
+                                Margin="0,0,10,0"
+                                Background="#1FFFFFFF"
+                                BorderBrush="#33FFFFFF"
+                                BorderThickness="1"
+                                CornerRadius="21">
+                            <TextBlock Text="&#xE9D2;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="16"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"/>
+                        </Border>
+                        <Border Width="42" Height="42"
+                                Background="#18FFFFFF"
+                                BorderBrush="#33FFFFFF"
+                                BorderThickness="1"
+                                CornerRadius="21">
+                            <TextBlock Text="&#xE823;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="16"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Grid>
         </Border>
 
         <!-- ═══════════════════════════════════════════════════════════════
