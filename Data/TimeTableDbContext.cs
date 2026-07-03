@@ -9,6 +9,8 @@ namespace TimeTableApp.Data
     {
         public DbSet<PersistedTaskItem> PersistedTaskItems => Set<PersistedTaskItem>();
         public DbSet<PersistedWeekLabel> PersistedWeekLabels => Set<PersistedWeekLabel>();
+        public DbSet<PersistedWorkQueueCell> PersistedWorkQueueCells => Set<PersistedWorkQueueCell>();
+        public DbSet<PersistedDayTimer> PersistedDayTimers => Set<PersistedDayTimer>();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -41,6 +43,19 @@ namespace TimeTableApp.Data
                 entity.HasIndex(x => x.LabelKey).IsUnique();
                 entity.Property(x => x.LabelKey).IsRequired();
                 entity.Property(x => x.LabelValue).IsRequired();
+            });
+
+            modelBuilder.Entity<PersistedWorkQueueCell>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.RowIndex, x.ColumnIndex }).IsUnique();
+                entity.Property(x => x.Value).IsRequired();
+            });
+
+            modelBuilder.Entity<PersistedDayTimer>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.DayIndex).IsUnique();
             });
         }
     }

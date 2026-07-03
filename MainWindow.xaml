@@ -3,6 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:vm="clr-namespace:TimeTableApp.ViewModels"
         xmlns:conv="clr-namespace:TimeTableApp.Converters"
         xmlns:behaviors="clr-namespace:TimeTableApp.Behaviors"
@@ -13,7 +15,17 @@
         MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
+        WindowStyle="None"
+        ResizeMode="CanResize"
         Background="#F5F6F7">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            ResizeBorderThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
         <conv:BelowEightyConverter x:Key="BelowEightyConverter"/>
@@ -29,6 +41,9 @@
         <SolidColorBrush x:Key="SubtleTextBrush" Color="#6B7280"/>
         <SolidColorBrush x:Key="AccentBrush"     Color="#2563EB"/>
         <SolidColorBrush x:Key="DangerBrush"     Color="#DC2626"/>
+        <SolidColorBrush x:Key="SoftBlueBrush"   Color="#DBEAFE"/>
+        <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">7</sys:Double>
+        <sys:Double x:Key="{x:Static SystemParameters.HorizontalScrollBarHeightKey}">6</sys:Double>
         <LinearGradientBrush x:Key="HeroHeaderBrush" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#1D4ED8" Offset="0"/>
             <GradientStop Color="#2563EB" Offset="0.55"/>
@@ -68,6 +83,8 @@
             <Setter Property="Background"                    Value="Transparent"/>
             <Setter Property="Padding"                       Value="2,0,2,0"/>
             <Setter Property="Margin"                        Value="0"/>
+            <Setter Property="MinWidth"                      Value="0"/>
+            <Setter Property="HorizontalAlignment"           Value="Stretch"/>
             <Setter Property="VerticalContentAlignment"      Value="Center"/>
             <Setter Property="Height"                        Value="30"/>
             <Setter Property="TextWrapping"                  Value="NoWrap"/>
@@ -99,6 +116,90 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Height"                   Value="30"/>
             <Setter Property="FontSize"                 Value="12"/>
+        </Style>
+
+        <Style x:Key="QueueCellTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource LabelInputStyle}">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ColumnIndex}" Value="3">
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RowIndex}" Value="2">
+                    <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding RowIndex}" Value="2"/>
+                        <Condition Binding="{Binding ColumnIndex}" Value="3"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="BorderThickness" Value="0"/>
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="TimerTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource LabelInputStyle}">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="MinWidth" Value="72"/>
+        </Style>
+
+        <Style x:Key="IconActionButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <Style x:Key="WindowControlButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Padding" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1CFFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CloseWindowControlButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButtonStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#DC2626"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Vertical">
+                    <Setter Property="Width" Value="7"/>
+                    <Setter Property="MinWidth" Value="7"/>
+                    <Setter Property="MaxWidth" Value="7"/>
+                </Trigger>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Height" Value="6"/>
+                    <Setter Property="MinHeight" Value="6"/>
+                    <Setter Property="MaxHeight" Value="6"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <!-- ── CheckBox ─────────────────────────────────────────────────── -->
@@ -159,10 +260,12 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="38"/>
                         <!-- day title -->
-                        <RowDefinition Height="34"/>
+                        <RowDefinition Height="0"/>
                         <!-- col headers -->
                         <RowDefinition Height="*"/>
                         <!-- task rows -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- work timer -->
                         <RowDefinition Height="Auto"/>
                         <!-- completed pts -->
                         <RowDefinition Height="Auto"/>
@@ -175,33 +278,55 @@
 
                     <!-- Day title -->
                     <Border Grid.Row="0"
-                            Background="{StaticResource ToolbarBrush}"
-                            BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,0,0,1"
                             CornerRadius="6,6,0,0"
                             Padding="8,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource ToolbarBrush}"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsTodayColumn}" Value="True">
+                                        <Setter Property="Background" Value="#E8F1FF"/>
+                                        <Setter Property="BorderBrush" Value="#BFDBFE"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <TextBlock Text="{Binding DayName}"
                                    FontSize="13" FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextBrush}"
                                    VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsTodayColumn}" Value="True">
+                                            <Setter Property="Foreground" Value="#1E3A8A"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Border>
 
                     <!-- Column headers -->
-                    <Grid Grid.Row="1" Background="{StaticResource HeaderBrush}">
+                    <Grid Grid.Row="1" Background="{StaticResource HeaderBrush}" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20"/>
                             <!-- drag handle -->
                             <ColumnDefinition Width="*"/>
                             <!-- task name -->
-                            <ColumnDefinition Width="36"/>
+                            <ColumnDefinition Width="24"/>
                             <!-- points -->
-                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="16"/>
                             <!-- done -->
-                            <ColumnDefinition Width="22"/>
+                            <ColumnDefinition Width="16"/>
+                            <!-- priority -->
+                            <ColumnDefinition Width="16"/>
                             <!-- delete -->
                         </Grid.ColumnDefinitions>
-                        <Border Grid.ColumnSpan="5"
+                        <Border Grid.ColumnSpan="6"
                                 BorderBrush="{StaticResource BorderBrush}"
                                 BorderThickness="0,0,0,1"/>
                         <TextBlock Grid.Column="1"
@@ -213,12 +338,37 @@
                                    FontFamily="Segoe MDL2 Assets" Text="&#xEC42;"
                                    FontSize="13" HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
-                                   Foreground="{StaticResource SubtleTextBrush}"/>
+                                   Foreground="{StaticResource SubtleTextBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsToDoColumn}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Grid.Column="3"
                                    FontFamily="Segoe MDL2 Assets" Text="&#xE73E;"
                                    FontSize="13" HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
-                                   Foreground="{StaticResource SubtleTextBrush}"/>
+                                   Foreground="{StaticResource SubtleTextBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsToDoColumn}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Grid.Column="4"
+                                   FontFamily="Segoe MDL2 Assets" Text="&#xE945;"
+                                   FontSize="12" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource DangerBrush}"/>
                     </Grid>
 
                     <!-- Scrollable task rows + drag-drop wired via behavior -->
@@ -230,21 +380,55 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Height="34" HorizontalAlignment="Stretch">
+                                        <Grid.Style>
+                                            <Style TargetType="Grid">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPriority}" Value="True">
+                                                        <Setter Property="Background" Value="#FFF4F4"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="20"/>
                                             <!-- drag handle -->
                                             <ColumnDefinition Width="*"/>
                                             <!-- task name -->
-                                            <ColumnDefinition Width="36"/>
+                                            <ColumnDefinition Width="24"/>
                                             <!-- points -->
-                                            <ColumnDefinition Width="30"/>
+                                            <ColumnDefinition Width="16">
+                                                <ColumnDefinition.Style>
+                                                    <Style TargetType="ColumnDefinition">
+                                                        <Setter Property="Width" Value="16"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DataContext.IsToDoColumn, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True">
+                                                                <Setter Property="Width" Value="0"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ColumnDefinition.Style>
+                                            </ColumnDefinition>
                                             <!-- done -->
-                                            <ColumnDefinition Width="22"/>
+                                            <ColumnDefinition Width="16">
+                                                <ColumnDefinition.Style>
+                                                    <Style TargetType="ColumnDefinition">
+                                                        <Setter Property="Width" Value="16"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DataContext.IsToDoColumn, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True">
+                                                                <Setter Property="Width" Value="0"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ColumnDefinition.Style>
+                                            </ColumnDefinition>
+                                            <!-- priority -->
+                                            <ColumnDefinition Width="16"/>
                                             <!-- delete -->
                                         </Grid.ColumnDefinitions>
 
                                         <!-- row separator -->
-                                        <Border Grid.ColumnSpan="5"
+                                        <Border Grid.ColumnSpan="6"
                                                 BorderBrush="#ECEEF2"
                                                 BorderThickness="0,0,0,1"
                                                 VerticalAlignment="Stretch"/>
@@ -271,22 +455,55 @@
                                         <TextBox Grid.Column="2"
                                                  Text="{Binding Points, Mode=TwoWay,
                                                         UpdateSourceTrigger=PropertyChanged}"
-                                                 Style="{StaticResource PointsTextBoxStyle}"
-                                                 VerticalAlignment="Center"/>
+                                                 VerticalAlignment="Center">
+                                            <TextBox.Style>
+                                                <Style TargetType="TextBox" BasedOn="{StaticResource PointsTextBoxStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.IsToDoColumn, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </TextBox>
 
                                         <!-- Done -->
                                         <CheckBox Grid.Column="3"
                                                   IsChecked="{Binding IsDone, Mode=TwoWay,
                                                              UpdateSourceTrigger=PropertyChanged}"
-                                                  Style="{StaticResource CenteredCheckBoxStyle}"
-                                                  VerticalAlignment="Center"/>
+                                                  VerticalAlignment="Center">
+                                            <CheckBox.Style>
+                                                <Style TargetType="CheckBox" BasedOn="{StaticResource CenteredCheckBoxStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.IsToDoColumn, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </CheckBox.Style>
+                                        </CheckBox>
 
-                                        <!-- Remove -->
-                                        <Button Grid.Column="4" Content="×"
+                                        <!-- Priority -->
+                                        <Button Grid.Column="4"
                                                 Style="{StaticResource RemoveButtonStyle}"
-                                                Command="{Binding DataContext.RemoveRowCommand,
+                                                Foreground="{StaticResource DangerBrush}"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontWeight="Normal"
+                                                Content="&#xE945;"
+                                                Command="{Binding DataContext.TogglePriorityCommand,
                                                           RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}"/>
+
+                                        <!-- Remove -->
+                                        <Button Grid.Column="5" Content="×"
+                                                Command="{Binding DataContext.RemoveRowCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource RemoveButtonStyle}">
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -298,19 +515,93 @@
                         </ItemsControl>
                     </ScrollViewer>
 
+                    <!-- Work timer -->
+                    <Border Grid.Row="3"
+                            Margin="8,8,8,2"
+                            Visibility="{Binding ShowWorkTimer, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource IconActionButtonStyle}"
+                                    Command="{Binding ToggleTimerCommand}"
+                                    ToolTip="Play or pause timer">
+                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="&#xE768;"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsTimerRunning}" Value="True">
+                                                    <Setter Property="Text" Value="&#xE769;"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Button>
+
+                            <TextBox Grid.Column="1"
+                                     Style="{StaticResource TimerTextBoxStyle}"
+                                     Text="{Binding EditableWorkTimerText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     IsReadOnly="{Binding IsWorkTimerReadOnly}"
+                                     HorizontalContentAlignment="Center"/>
+
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource IconActionButtonStyle}"
+                                    Margin="6,0,0,0"
+                                    Command="{Binding ToggleTimerEditCommand}"
+                                    ToolTip="Edit frozen timer"
+                                    Visibility="{Binding CanEditFrozenTimer, Converter={StaticResource BoolToVis}}">
+                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="&#xE70F;"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEditingWorkTimer}" Value="True">
+                                                    <Setter Property="Text" Value="&#xE73E;"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Button>
+                        </Grid>
+                    </Border>
+
                     <!-- Completed points -->
-                    <TextBlock Grid.Row="3"
+                    <TextBlock Grid.Row="4"
                                Margin="8,8,8,1" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource TextBrush}"
                                Text="{Binding TotalCompletedPoints,
-                                      StringFormat='Completed: {0} pts'}"/>
+                                      StringFormat='Completed: {0} pts'}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsToDoColumn}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
                     <!-- Total points (red + warning when < 10, hidden for To Do) -->
-                    <TextBlock Grid.Row="4" Margin="8,0,8,6" FontSize="11">
+                    <TextBlock Grid.Row="5" Margin="8,0,8,6" FontSize="11">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}"/>
                                 <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsToDoColumn}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding IsBelowMinPoints}" Value="True">
                                         <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
                                         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -326,7 +617,16 @@
                     </TextBlock>
 
                     <!-- Progress bar (red when below 80%) -->
-                    <StackPanel Grid.Row="5" Margin="8,0,8,8">
+                    <StackPanel Grid.Row="6" Margin="8,0,8,8">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsToDoColumn}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
                         <ProgressBar Minimum="0" Maximum="100"
                                      Value="{Binding ProgressValue, Mode=OneWay}">
                             <ProgressBar.Style>
@@ -365,7 +665,7 @@
                     </StackPanel>
 
                     <!-- Add-row footer -->
-                    <Border Grid.Row="6"
+                    <Border Grid.Row="7"
                             Background="{StaticResource ToolbarBrush}"
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,1,0,0"
@@ -388,92 +688,176 @@
     ═════════════════════════════════════════════════════════════════════ -->
     <DockPanel Background="{StaticResource WindowBrush}">
 
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource AccentBrush}"
+                Height="32"
+                MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="12,0,0,0">
+                    <Image Source="/Assets/app.ico"
+                           Width="14"
+                           Height="14"
+                           Margin="0,0,8,0"/>
+                    <TextBlock Text="Target Table"
+                               Foreground="White"
+                               FontSize="12"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal">
+                    <Button Style="{StaticResource WindowControlButtonStyle}"
+                            Content="&#xE921;"
+                            Click="OnMinimizeClick"/>
+                    <Button Style="{StaticResource WindowControlButtonStyle}"
+                            Content="&#xE922;"
+                            Click="OnMaximizeRestoreClick"/>
+                    <Button Style="{StaticResource CloseWindowControlButtonStyle}"
+                            Content="&#xE8BB;"
+                            Click="OnCloseClick"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- App bar -->
         <Border DockPanel.Dock="Top"
-                Margin="12,12,12,0"
-                CornerRadius="18"
+                Margin="0,0,0,0"
+                CornerRadius="0"
                 Background="{StaticResource HeroHeaderBrush}"
-                Padding="24,20"
+                Padding="24,5"
                 SnapsToDevicePixels="True">
             <Grid>
-                <Ellipse Width="180" Height="180"
+                <Ellipse Width="128" Height="128"
                          Fill="#1E40AF"
-                         Opacity="0.18"
+                         Opacity="0.09"
+                         HorizontalAlignment="Left"
+                         VerticalAlignment="Top"
+                         Margin="-56,-92,0,0"/>
+                <Ellipse Width="82" Height="82"
+                         Fill="#93C5FD"
+                         Opacity="0.1"
                          HorizontalAlignment="Right"
                          VerticalAlignment="Top"
-                         Margin="0,-90,-50,0"/>
-                <Ellipse Width="130" Height="130"
-                         Fill="#93C5FD"
-                         Opacity="0.16"
+                         Margin="0,-38,92,0"/>
+                <Ellipse Width="62" Height="62"
+                         Fill="#BFDBFE"
+                         Opacity="0.08"
                          HorizontalAlignment="Right"
                          VerticalAlignment="Bottom"
-                         Margin="0,0,50,-60"/>
+                         Margin="0,0,-12,-10"/>
+
+                <Canvas IsHitTestVisible="False">
+                    <TextBlock Canvas.Left="140"
+                               Canvas.Top="-8"
+                               Text="&#xE8FD;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="20"
+                               Foreground="#D7E9FF"
+                               Opacity="0.26"/>
+                    <TextBlock Canvas.Left="320"
+                               Canvas.Top="4"
+                               Text="&#xE7C3;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="17"
+                               Foreground="#EAF3FF"
+                               Opacity="0.28"/>
+                    <TextBlock Canvas.Left="525"
+                               Canvas.Top="-10"
+                               Text="&#xE823;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="18"
+                               Foreground="#D7E9FF"
+                               Opacity="0.24"/>
+                    <TextBlock Canvas.Left="700"
+                               Canvas.Top="8"
+                               Text="&#xE7BA;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="15"
+                               Foreground="#F8FBFF"
+                               Opacity="0.22"/>
+                    <TextBlock Canvas.Left="880"
+                               Canvas.Top="-6"
+                               Text="&#xE8A5;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="20"
+                               Foreground="#DDEEFF"
+                               Opacity="0.2"/>
+                    <TextBlock Canvas.Right="240"
+                               Canvas.Top="-8"
+                               Text="&#xE9D2;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="20"
+                               Foreground="#F8FBFF"
+                               Opacity="0.28"/>
+                    <TextBlock Canvas.Right="90"
+                               Canvas.Top="-1"
+                               Text="&#xE70F;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="16"
+                               Foreground="#DBECFF"
+                               Opacity="0.22"/>
+                    <TextBlock Canvas.Right="180"
+                               Canvas.Top="12"
+                               Text="&#xE81C;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="15"
+                               Foreground="#EAF3FF"
+                               Opacity="0.2"/>
+                    <TextBlock Canvas.Right="28"
+                               Canvas.Top="4"
+                               Text="&#xE787;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="18"
+                               Foreground="#F8FBFF"
+                               Opacity="0.26"/>
+                    <TextBlock Canvas.Right="360"
+                               Canvas.Top="10"
+                               Text="&#xE8EF;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="13"
+                               Foreground="#D7E9FF"
+                               Opacity="0.2"/>
+                    <TextBlock Canvas.Right="500"
+                               Canvas.Top="-10"
+                               Text="&#xE9CA;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="18"
+                               Foreground="#EAF3FF"
+                               Opacity="0.18"/>
+                    <TextBlock Canvas.Right="640"
+                               Canvas.Top="5"
+                               Text="&#xE71D;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="15"
+                               Foreground="#DCEBFF"
+                               Opacity="0.18"/>
+                </Canvas>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center">
                         <TextBlock Text="Target Table"
-                                   FontSize="28"
+                                   FontSize="20"
                                    FontWeight="SemiBold"
                                    Foreground="White"
                                    TextAlignment="Left"/>
-                        <TextBlock Margin="0,6,0,0"
-                                   FontSize="12"
+                        <TextBlock Margin="0,3,0,0"
+                                   FontSize="10"
                                    Foreground="{StaticResource HeroSubtleBrush}"
                                    Text="{Binding AppVersion, RelativeSource={RelativeSource AncestorType=Window}, StringFormat=Version {0}}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center">
-                        <Border Width="42" Height="42"
-                                Margin="0,0,10,0"
-                                Background="#22FFFFFF"
-                                BorderBrush="#33FFFFFF"
-                                BorderThickness="1"
-                                CornerRadius="21">
-                            <TextBlock Text="&#xE8FD;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"/>
-                        </Border>
-                        <Border Width="42" Height="42"
-                                Margin="0,0,10,0"
-                                Background="#1FFFFFFF"
-                                BorderBrush="#33FFFFFF"
-                                BorderThickness="1"
-                                CornerRadius="21">
-                            <TextBlock Text="&#xE9D2;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="16"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"/>
-                        </Border>
-                        <Border Width="42" Height="42"
-                                Background="#18FFFFFF"
-                                BorderBrush="#33FFFFFF"
-                                BorderThickness="1"
-                                CornerRadius="21">
-                            <TextBlock Text="&#xE823;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="16"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center"/>
-                        </Border>
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -484,19 +868,20 @@
         ═══════════════════════════════════════════════════════════════ -->
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="7*"/>
-                <RowDefinition Height="1*" MinHeight="100"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto" MinHeight="100"/>
             </Grid.RowDefinitions>
 
             <!-- ── Top tasks area  (To Do first, then 7 day columns) ───── -->
-            <ScrollViewer Grid.Row="0"
-                          HorizontalScrollBarVisibility="Auto"
+            <ScrollViewer x:Name="TaskColumnsScrollViewer"
+                          Grid.Row="0"
+                          HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Disabled"
                           Padding="6,6,6,4">
-                <Grid>
+                <Grid Width="{Binding ElementName=TaskColumnsScrollViewer, Path=ViewportWidth}">
                     <Grid.ColumnDefinitions>
-                        <!-- To Do column — slightly wider -->
-                        <ColumnDefinition Width="1.15*"/>
+                        <!-- To Do column — slightly narrower -->
+                        <ColumnDefinition Width="0.8*"/>
                         <!-- 7 day columns -->
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
@@ -523,7 +908,7 @@
                 </Grid>
             </ScrollViewer>
 
-            <!-- ── Bottom panel  (Weekly Stats + Period Labels) ─────────── -->
+            <!-- ── Bottom panel  (Weekly Stats + Work Queues) ───────────── -->
             <Border Grid.Row="1"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
@@ -533,6 +918,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3*"/>
                         <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- ── Weekly Stats ──────────────────────────────── -->
@@ -651,67 +1037,56 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- ── Period Labels ─────────────────────────────── -->
-                    <StackPanel Grid.Column="1"
-                                Margin="18,0,0,0"
-                                VerticalAlignment="Center">
+                    <!-- ── Work Queues ───────────────────────────────── -->
+                    <Grid Grid.Column="1"
+                          Margin="18,0,0,0"
+                          VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Period Labels"
+                        <TextBlock Grid.Column="0"
+                                   Text="Work Queues"
                                    FontSize="14" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextBrush}"
-                                   Margin="0,0,0,10"/>
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Center"/>
 
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                        <Border Grid.Column="1"
+                                Background="{StaticResource HeaderBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="0"
+                                Padding="0">
+                            <ItemsControl ItemsSource="{Binding WorkQueueCells}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Rows="3" Columns="4"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBox Style="{StaticResource QueueCellTextBoxStyle}"
+                                                 Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </Grid>
 
-                            <TextBlock Grid.Column="0"
-                                       Text="Day"
-                                       FontSize="11"
-                                       Foreground="{StaticResource SubtleTextBrush}"
-                                       Margin="0,0,8,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1"
-                                     Text="{Binding WeeklyStats.DayLabel, Mode=TwoWay,
-                                            UpdateSourceTrigger=PropertyChanged}"
-                                     Style="{StaticResource LabelInputStyle}"
-                                     LostFocus="OnLabelLostFocus"
-                                     ToolTip="Name for the day (e.g. Learning day)"
-                                     Margin="0,0,12,0"/>
-
-                            <TextBlock Grid.Column="2"
-                                       Text="Week"
-                                       FontSize="11"
-                                       Foreground="{StaticResource SubtleTextBrush}"
-                                       Margin="0,0,8,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="3"
-                                     Text="{Binding WeeklyStats.WeekLabel, Mode=TwoWay,
-                                            UpdateSourceTrigger=PropertyChanged}"
-                                     Style="{StaticResource LabelInputStyle}"
-                                     LostFocus="OnLabelLostFocus"
-                                     ToolTip="Name for the week"
-                                     Margin="0,0,12,0"/>
-
-                            <TextBlock Grid.Column="4"
-                                       Text="Month"
-                                       FontSize="11"
-                                       Foreground="{StaticResource SubtleTextBrush}"
-                                       Margin="0,0,8,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="5"
-                                     Text="{Binding WeeklyStats.MonthLabel, Mode=TwoWay,
-                                            UpdateSourceTrigger=PropertyChanged}"
-                                     Style="{StaticResource LabelInputStyle}"
-                                     LostFocus="OnLabelLostFocus"
-                                     ToolTip="Name for the month"/>
-                        </Grid>
+                    <StackPanel Grid.Column="2"
+                                Margin="18,0,0,0"
+                                VerticalAlignment="Center">
+                        <Button Content="Import"
+                                Command="{Binding ImportJsonCommand}"
+                                Style="{StaticResource AddButtonStyle}"
+                                Width="90"
+                                Margin="0,0,0,8"/>
+                        <Button Content="Export"
+                                Command="{Binding ExportJsonCommand}"
+                                Style="{StaticResource AddButtonStyle}"
+                                Width="90"/>
                     </StackPanel>
                 </Grid>
             </Border>

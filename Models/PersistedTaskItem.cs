@@ -16,6 +16,8 @@
 
         public bool IsDone { get; set; }
 
+        public bool IsPriority { get; set; }
+
         // True if this belongs to the standalone "To Do" column
         public bool IsToDoColumn { get; set; }
     }
