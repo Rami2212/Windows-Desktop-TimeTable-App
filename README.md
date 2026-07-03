@@ -9,7 +9,8 @@ A WPF desktop planning app for managing daily tasks, weekly progress, work timer
 - `To Do` column plus 7 daily columns
 - Inline editable task inputs
 - Per-task priority toggle with light red highlighting
-- Daily work timer with play/pause and frozen past-day behavior
+- Undo for recently removed tasks with footer action and `Ctrl+Z`
+- Daily work timer with play/pause, app-close persistence, and frozen past-day behavior
 - Weekly stats and progress tracking
 - `Work Queues` 3x4 planning grid
 - JSON import and export
@@ -62,7 +63,7 @@ TimeTableApp
 - Each column is represented by `DayColumnViewModel`
 - Each task row is represented by `DayTaskStatus`
 - Work queue cells are represented by `WorkQueueCellViewModel`
-- Persistent data includes task state, priority, timer values, and queue cell values
+- Persistent data includes task state, priority, timer values, timer running state, and queue cell values
 
 Stored values include:
 
@@ -74,6 +75,8 @@ Points               -> Task score value
 IsDone               -> Completion state
 IsPriority           -> Priority flag
 ElapsedMilliseconds  -> Saved work timer value
+IsRunning            -> Whether the timer was active
+RunningStartedUtc    -> UTC timestamp used to continue the timer after reopen
 ```
 
 ---
@@ -82,6 +85,7 @@ ElapsedMilliseconds  -> Saved work timer value
 
 - The app loads saved data from SQLite at startup
 - Changes are saved automatically during normal interaction
+- Running timers continue logically while the app is closed and catch up on reopen
 - Data can also be exported to and imported from JSON
 
 SQLite file location:
@@ -115,6 +119,42 @@ You can also open the project in Visual Studio and start it from there.
 ```bash
 dotnet build TimeTableApp.csproj
 ```
+
+---
+
+## Installer
+
+This project includes an Inno Setup installer script:
+
+```text
+Installer\TargetTable.iss
+```
+
+Installer flow:
+
+1. Publish the app to:
+
+```text
+artifacts\publish\win-x86
+```
+
+2. Build the installer from that published output into:
+
+```text
+artifacts\installer
+```
+
+Helper script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-installer.ps1
+```
+
+Notes:
+
+- The helper script publishes the app first using the `FolderProfile` publish profile.
+- Inno Setup 6 must be installed for `ISCC.exe` to compile the installer.
+- If Inno Setup is not installed, the script will still publish the app and then stop with a warning.
 
 ---
 

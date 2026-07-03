@@ -15,12 +15,19 @@ namespace TimeTableApp.ViewModels
         private const int MinRequiredPoints = 10;
 
         private readonly DispatcherTimer _workTimer;
+        private readonly DispatcherTimer _undoDismissTimer;
         private string _dayName = string.Empty;
         private DayTaskStatus? _selectedDayTask;
         private TimeSpan _elapsedWorkTime;
+        private long _storedElapsedMilliseconds;
         private bool _isTimerRunning;
         private bool _isEditingWorkTimer;
         private string _editableWorkTimerText = "00:00:00.00";
+        private DateTime? _runningStartedUtc;
+        private DayTaskStatus? _lastRemovedTask;
+        private int _lastRemovedTaskIndex = -1;
+        private string _undoMessage = string.Empty;
+        private DateTime? _lastUndoCreatedUtc;
 
         public string DayName
         {
@@ -100,6 +107,10 @@ namespace TimeTableApp.ViewModels
             }
         }
 
+        public long StoredElapsedMilliseconds => _storedElapsedMilliseconds;
+
+        public DateTime? RunningStartedUtc => _runningStartedUtc;
+
         public bool IsEditingWorkTimer
         {
             get => _isEditingWorkTimer;
@@ -136,8 +147,37 @@ namespace TimeTableApp.ViewModels
 
         public bool CanEditFrozenTimer => IsTimerFrozen;
 
+        public bool HasUndoTask => _lastRemovedTask != null;
+
+        public string UndoMessage
+        {
+            get => _undoMessage;
+            private set
+            {
+                if (_undoMessage != value)
+                {
+                    _undoMessage = value;
+                    OnPropertyChanged(nameof(UndoMessage));
+                }
+            }
+        }
+
+        public DateTime? LastUndoCreatedUtc
+        {
+            get => _lastUndoCreatedUtc;
+            private set
+            {
+                if (_lastUndoCreatedUtc != value)
+                {
+                    _lastUndoCreatedUtc = value;
+                    OnPropertyChanged(nameof(LastUndoCreatedUtc));
+                }
+            }
+        }
+
         public RelayCommand AddRowCommand { get; }
         public RelayCommand RemoveRowCommand { get; }
+        public RelayCommand UndoRemoveRowCommand { get; }
         public RelayCommand TogglePriorityCommand { get; }
         public RelayCommand ToggleTimerCommand { get; }
         public RelayCommand ToggleTimerEditCommand { get; }
@@ -162,6 +202,7 @@ namespace TimeTableApp.ViewModels
 
         public event Action? DataChanged;
         public event Action? TimerSaved;
+        public event Action? UndoStateChanged;
 
         public DayColumnViewModel(string dayName, int dayIndex, DateTime? columnDate = null, bool isToDoColumn = false)
         {
@@ -172,6 +213,7 @@ namespace TimeTableApp.ViewModels
 
             AddRowCommand = new RelayCommand(AddBlankTaskRow);
             RemoveRowCommand = new RelayCommand(RemoveRowFromParameter);
+            UndoRemoveRowCommand = new RelayCommand(UndoLastRemovedTask, () => HasUndoTask);
             TogglePriorityCommand = new RelayCommand(TogglePriorityFromParameter);
             ToggleTimerCommand = new RelayCommand(ToggleWorkTimer, () => CanStartOrPauseTimer);
             ToggleTimerEditCommand = new RelayCommand(ToggleTimerEdit, () => CanEditFrozenTimer);
@@ -181,6 +223,12 @@ namespace TimeTableApp.ViewModels
                 Interval = TimeSpan.FromMilliseconds(100)
             };
             _workTimer.Tick += OnWorkTimerTick;
+
+            _undoDismissTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(6)
+            };
+            _undoDismissTimer.Tick += (_, _) => ClearUndoState();
 
             DayTasks.CollectionChanged += OnDayTasksCollectionChanged;
             RefreshTimerAvailability();
@@ -204,6 +252,18 @@ namespace TimeTableApp.ViewModels
         {
             if (dayTaskStatus == null) return;
 
+            _lastRemovedTaskIndex = DayTasks.IndexOf(dayTaskStatus);
+            _lastRemovedTask = dayTaskStatus;
+            LastUndoCreatedUtc = DateTime.UtcNow;
+            UndoMessage = string.IsNullOrWhiteSpace(dayTaskStatus.TaskName)
+                ? "Task removed"
+                : $"Removed: {dayTaskStatus.TaskName}";
+            OnPropertyChanged(nameof(HasUndoTask));
+            UndoRemoveRowCommand.RaiseCanExecuteChanged();
+            NotifyUndoStateChanged();
+            _undoDismissTimer.Stop();
+            _undoDismissTimer.Start();
+
             dayTaskStatus.PropertyChanged -= OnTaskStatusChanged;
             DayTasks.Remove(dayTaskStatus);
 
@@ -216,6 +276,8 @@ namespace TimeTableApp.ViewModels
 
         public void ClearAllTasks()
         {
+            ClearUndoState();
+
             foreach (var task in DayTasks)
                 task.PropertyChanged -= OnTaskStatusChanged;
 
@@ -224,17 +286,45 @@ namespace TimeTableApp.ViewModels
             RefreshTotals();
         }
 
-        public void LoadTimerState(TimeSpan elapsedTime)
+        public void LoadTimerState(TimeSpan elapsedTime, bool isRunning = false, DateTime? runningStartedUtc = null)
         {
-            ElapsedWorkTime = elapsedTime;
+            _storedElapsedMilliseconds = (long)elapsedTime.TotalMilliseconds;
+            _runningStartedUtc = isRunning ? runningStartedUtc : null;
+            ElapsedWorkTime = CalculateCurrentElapsed(DateTime.UtcNow);
             EditableWorkTimerText = WorkTimerDisplay;
             IsEditingWorkTimer = false;
-            PauseInternal();
+            if (isRunning && CanStartOrPauseTimer)
+            {
+                SetRunningState(true);
+            }
+            else
+            {
+                if (isRunning)
+                    FinalizeRunningTimer(ElapsedWorkTime);
+                else
+                    PauseInternal();
+            }
             RefreshTimerAvailability();
         }
 
         public void RefreshTimerAvailability()
         {
+            if (_runningStartedUtc.HasValue)
+            {
+                var nowUtc = DateTime.UtcNow;
+                var currentElapsed = CalculateCurrentElapsed(nowUtc);
+
+                if (IsTimerFrozen || !CanStartOrPauseTimer)
+                {
+                    FinalizeRunningTimer(currentElapsed);
+                    NotifyTimerSaved();
+                }
+                else if (IsTimerRunning)
+                {
+                    ElapsedWorkTime = currentElapsed;
+                }
+            }
+
             if (IsTimerFrozen)
             {
                 _workTimer.Stop();
@@ -273,15 +363,18 @@ namespace TimeTableApp.ViewModels
 
             if (IsTimerRunning)
             {
-                PauseInternal();
+                FinalizeRunningTimer(CalculateCurrentElapsed(DateTime.UtcNow));
                 NotifyTimerSaved();
             }
             else
             {
                 IsEditingWorkTimer = false;
+                _runningStartedUtc = DateTime.UtcNow;
+                ElapsedWorkTime = CalculateCurrentElapsed(_runningStartedUtc.Value);
                 _workTimer.Start();
-                IsTimerRunning = true;
+                SetRunningState(true);
                 RefreshTimerAvailability();
+                NotifyTimerSaved();
             }
         }
 
@@ -299,6 +392,8 @@ namespace TimeTableApp.ViewModels
 
             if (TimeSpan.TryParse(EditableWorkTimerText, out var parsed))
             {
+                _storedElapsedMilliseconds = (long)parsed.TotalMilliseconds;
+                _runningStartedUtc = null;
                 ElapsedWorkTime = parsed;
                 IsEditingWorkTimer = false;
                 NotifyTimerSaved();
@@ -308,7 +403,7 @@ namespace TimeTableApp.ViewModels
         private void PauseInternal()
         {
             _workTimer.Stop();
-            IsTimerRunning = false;
+            SetRunningState(false);
             OnPropertyChanged(nameof(IsTimerFrozen));
             OnPropertyChanged(nameof(CanStartOrPauseTimer));
             ToggleTimerCommand.RaiseCanExecuteChanged();
@@ -318,18 +413,34 @@ namespace TimeTableApp.ViewModels
         {
             if (IsTimerFrozen || !CanStartOrPauseTimer)
             {
-                PauseInternal();
+                FinalizeRunningTimer(CalculateCurrentElapsed(DateTime.UtcNow));
                 NotifyTimerSaved();
                 return;
             }
 
-            ElapsedWorkTime = ElapsedWorkTime.Add(_workTimer.Interval);
+            ElapsedWorkTime = CalculateCurrentElapsed(DateTime.UtcNow);
         }
 
         private void RemoveRowFromParameter(object? parameter)
         {
             if (parameter is DayTaskStatus row)
                 RemoveTask(row);
+        }
+
+        private void UndoLastRemovedTask()
+        {
+            if (_lastRemovedTask == null)
+                return;
+
+            var insertIndex = _lastRemovedTaskIndex;
+            if (insertIndex < 0 || insertIndex > DayTasks.Count)
+                insertIndex = DayTasks.Count;
+
+            _lastRemovedTask.PropertyChanged += OnTaskStatusChanged;
+            DayTasks.Insert(insertIndex, _lastRemovedTask);
+            RefreshTotals();
+            NotifyDataChanged();
+            ClearUndoState();
         }
 
         private void TogglePriorityFromParameter(object? parameter)
@@ -362,5 +473,68 @@ namespace TimeTableApp.ViewModels
         private void NotifyDataChanged() => DataChanged?.Invoke();
 
         private void NotifyTimerSaved() => TimerSaved?.Invoke();
+
+        private void SetRunningState(bool isRunning)
+        {
+            if (isRunning)
+            {
+                _workTimer.Start();
+            }
+            else
+            {
+                _workTimer.Stop();
+            }
+
+            IsTimerRunning = isRunning;
+        }
+
+        private void FinalizeRunningTimer(TimeSpan finalElapsed)
+        {
+            _storedElapsedMilliseconds = (long)finalElapsed.TotalMilliseconds;
+            _runningStartedUtc = null;
+            ElapsedWorkTime = finalElapsed;
+            PauseInternal();
+        }
+
+        private TimeSpan CalculateCurrentElapsed(DateTime utcNow)
+        {
+            var elapsed = TimeSpan.FromMilliseconds(_storedElapsedMilliseconds);
+
+            if (!_runningStartedUtc.HasValue)
+                return elapsed;
+
+            var effectiveUtcNow = utcNow;
+            var dayEndUtc = GetDayEndUtc();
+            if (dayEndUtc.HasValue && effectiveUtcNow > dayEndUtc.Value)
+                effectiveUtcNow = dayEndUtc.Value;
+
+            if (effectiveUtcNow <= _runningStartedUtc.Value)
+                return elapsed;
+
+            return elapsed.Add(effectiveUtcNow - _runningStartedUtc.Value);
+        }
+
+        private DateTime? GetDayEndUtc()
+        {
+            if (!ColumnDate.HasValue)
+                return null;
+
+            var localDayEnd = ColumnDate.Value.Date.AddDays(1);
+            return localDayEnd.ToUniversalTime();
+        }
+
+        private void ClearUndoState()
+        {
+            _undoDismissTimer.Stop();
+            _lastRemovedTask = null;
+            _lastRemovedTaskIndex = -1;
+            LastUndoCreatedUtc = null;
+            UndoMessage = string.Empty;
+            OnPropertyChanged(nameof(HasUndoTask));
+            UndoRemoveRowCommand.RaiseCanExecuteChanged();
+            NotifyUndoStateChanged();
+        }
+
+        private void NotifyUndoStateChanged() => UndoStateChanged?.Invoke();
     }
 }
