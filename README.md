@@ -122,6 +122,42 @@ dotnet build TimeTableApp.csproj
 
 ---
 
+## Installer
+
+This project includes an Inno Setup installer script:
+
+```text
+Installer\TargetTable.iss
+```
+
+Installer flow:
+
+1. Publish the app to:
+
+```text
+artifacts\publish\win-x86
+```
+
+2. Build the installer from that published output into:
+
+```text
+artifacts\installer
+```
+
+Helper script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-installer.ps1
+```
+
+Notes:
+
+- The helper script publishes the app first using the `FolderProfile` publish profile.
+- Inno Setup 6 must be installed for `ISCC.exe` to compile the installer.
+- If Inno Setup is not installed, the script will still publish the app and then stop with a warning.
+
+---
+
 ## Security Note
 
 You may see this warning during restore or build:
