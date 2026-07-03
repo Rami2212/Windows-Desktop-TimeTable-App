@@ -1,3 +1,5 @@
+using System;
+
 namespace TimeTableApp.Models
 {
     public class PersistedDayTimer
@@ -7,5 +9,9 @@ namespace TimeTableApp.Models
         public int DayIndex { get; set; }
 
         public long ElapsedMilliseconds { get; set; }
+
+        public bool IsRunning { get; set; }
+
+        public DateTime? RunningStartedUtc { get; set; }
     }
 }

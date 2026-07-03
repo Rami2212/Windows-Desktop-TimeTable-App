@@ -31,6 +31,8 @@ namespace TimeTableApp.ViewModels
 
         public RelayCommand ImportJsonCommand { get; }
 
+        public RelayCommand UndoLastRemovedTaskCommand { get; }
+
         public MainViewModel()
         {
             _sqliteDataService.EnsureDatabaseCreated();
@@ -44,11 +46,13 @@ namespace TimeTableApp.ViewModels
                 var dayVm = new DayColumnViewModel(dayLabel, i, currentDate);
                 dayVm.DataChanged += OnDayDataChanged;
                 dayVm.TimerSaved += OnTimerSaved;
+                dayVm.UndoStateChanged += OnUndoStateChanged;
                 Days.Add(dayVm);
             }
 
             ToDoColumn = new DayColumnViewModel("To Do", dayIndex: 7, isToDoColumn: true);
             ToDoColumn.DataChanged += OnDayDataChanged;
+            ToDoColumn.UndoStateChanged += OnUndoStateChanged;
 
             for (int row = 0; row < 3; row++)
             {
@@ -62,6 +66,7 @@ namespace TimeTableApp.ViewModels
 
             ExportJsonCommand = new RelayCommand(ExportToJson);
             ImportJsonCommand = new RelayCommand(ImportFromJson);
+            UndoLastRemovedTaskCommand = new RelayCommand(UndoLastRemovedTask, CanUndoLastRemovedTask);
 
             _dayRefreshTimer = new DispatcherTimer
             {
@@ -106,6 +111,7 @@ namespace TimeTableApp.ViewModels
                 return;
 
             RefreshWeeklyStats();
+            UndoLastRemovedTaskCommand.RaiseCanExecuteChanged();
             SaveAllDays();
         }
 
@@ -115,6 +121,11 @@ namespace TimeTableApp.ViewModels
                 return;
 
             SaveDayTimers();
+        }
+
+        private void OnUndoStateChanged()
+        {
+            UndoLastRemovedTaskCommand.RaiseCanExecuteChanged();
         }
 
         private void OnWorkQueueCellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -242,7 +253,9 @@ namespace TimeTableApp.ViewModels
                     .Select(day => new PersistedDayTimer
                     {
                         DayIndex = day.DayIndex,
-                        ElapsedMilliseconds = (long)day.ElapsedWorkTime.TotalMilliseconds
+                        ElapsedMilliseconds = day.StoredElapsedMilliseconds,
+                        IsRunning = day.IsTimerRunning,
+                        RunningStartedUtc = day.RunningStartedUtc
                     })
                     .ToList(),
                 Labels = new Dictionary<string, string>
@@ -301,7 +314,23 @@ namespace TimeTableApp.ViewModels
 
             RefreshWeeklyStats();
             RefreshDayTimers();
+            UndoLastRemovedTaskCommand.RaiseCanExecuteChanged();
             SaveAllState();
+        }
+
+        private bool CanUndoLastRemovedTask()
+        {
+            return GetMostRecentUndoColumn() != null;
+        }
+
+        private void UndoLastRemovedTask()
+        {
+            var targetColumn = GetMostRecentUndoColumn();
+            if (targetColumn == null)
+                return;
+
+            targetColumn.UndoRemoveRowCommand.Execute(null);
+            UndoLastRemovedTaskCommand.RaiseCanExecuteChanged();
         }
 
         private List<PersistedTaskItem> BuildTaskExportData()
@@ -409,11 +438,19 @@ namespace TimeTableApp.ViewModels
         private void ApplyDayTimers(IEnumerable<PersistedDayTimer> timers)
         {
             var timerMap = timers.ToDictionary(timer => timer.DayIndex, timer => timer.ElapsedMilliseconds);
+            var runningMap = timers.ToDictionary(timer => timer.DayIndex, timer => timer);
 
             foreach (var day in Days)
             {
                 var milliseconds = timerMap.TryGetValue(day.DayIndex, out var elapsed) ? elapsed : 0;
-                day.LoadTimerState(TimeSpan.FromMilliseconds(milliseconds));
+                var timerState = runningMap.TryGetValue(day.DayIndex, out var persistedTimer)
+                    ? persistedTimer
+                    : null;
+
+                day.LoadTimerState(
+                    TimeSpan.FromMilliseconds(milliseconds),
+                    timerState?.IsRunning ?? false,
+                    timerState?.RunningStartedUtc);
             }
         }
 
@@ -421,6 +458,15 @@ namespace TimeTableApp.ViewModels
         {
             int diff = (7 + (date.DayOfWeek - startOfWeek)) % 7;
             return date.AddDays(-diff).Date;
+        }
+
+        private DayColumnViewModel? GetMostRecentUndoColumn()
+        {
+            return Days
+                .Append(ToDoColumn)
+                .Where(column => column.HasUndoTask && column.LastUndoCreatedUtc.HasValue)
+                .OrderByDescending(column => column.LastUndoCreatedUtc)
+                .FirstOrDefault();
         }
     }
 }

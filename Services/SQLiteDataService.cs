@@ -39,9 +39,13 @@ namespace TimeTableApp.Services
                 CREATE TABLE IF NOT EXISTS PersistedDayTimers (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
                     DayIndex INTEGER NOT NULL UNIQUE,
-                    ElapsedMilliseconds INTEGER NOT NULL DEFAULT 0
+                    ElapsedMilliseconds INTEGER NOT NULL DEFAULT 0,
+                    IsRunning INTEGER NOT NULL DEFAULT 0,
+                    RunningStartedUtc TEXT NULL
                 )");
             try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN ElapsedMilliseconds INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN IsRunning INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN RunningStartedUtc TEXT NULL"); } catch { }
         }
 
         public List<PersistedTaskItem> LoadAllDays()
@@ -177,7 +181,9 @@ namespace TimeTableApp.Services
                     .Select(day => new PersistedDayTimer
                     {
                         DayIndex = day.DayIndex,
-                        ElapsedMilliseconds = (long)day.ElapsedWorkTime.TotalMilliseconds
+                        ElapsedMilliseconds = day.StoredElapsedMilliseconds,
+                        IsRunning = day.IsTimerRunning,
+                        RunningStartedUtc = day.RunningStartedUtc
                     }));
 
             db.SaveChanges();

@@ -19,6 +19,12 @@
         ResizeMode="CanResize"
         Background="#F5F6F7">
 
+    <Window.InputBindings>
+        <KeyBinding Key="Z"
+                    Modifiers="Control"
+                    Command="{Binding UndoLastRemovedTaskCommand}"/>
+    </Window.InputBindings>
+
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0"
                             CornerRadius="0"
@@ -671,11 +677,29 @@
                             BorderThickness="0,1,0,0"
                             CornerRadius="0,0,6,6"
                             Padding="8,5">
-                        <Button Content="+ Add Row"
-                                Command="{Binding AddRowCommand}"
-                                Style="{StaticResource AddButtonStyle}"
-                                HorizontalAlignment="Left"
-                                Width="80"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0"
+                                    Content="+ Add Row"
+                                    Command="{Binding AddRowCommand}"
+                                    Style="{StaticResource AddButtonStyle}"
+                                    HorizontalAlignment="Left"
+                                    Width="80"/>
+
+                            <Button Grid.Column="1"
+                                    Content="Undo"
+                                    Command="{Binding UndoRemoveRowCommand}"
+                                    Style="{StaticResource AddButtonStyle}"
+                                    HorizontalAlignment="Left"
+                                    Width="64"
+                                    Margin="8,0,0,0"
+                                    Visibility="{Binding HasUndoTask, Converter={StaticResource BoolToVis}}"
+                                    ToolTip="{Binding UndoMessage}"/>
+                        </Grid>
                     </Border>
                 </Grid>
             </Border>
