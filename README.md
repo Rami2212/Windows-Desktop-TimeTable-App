@@ -1,134 +1,141 @@
-# Windows Desktop TimeTable App
+# Target Table
 
-A modern desktop timetable and task tracking application built with WPF (.NET), featuring daily task management, progress tracking, and SQLite-based persistence.
+A WPF desktop planning app for managing daily tasks, weekly progress, work timers, and quick queue notes with SQLite-backed persistence.
 
 ---
 
 ## Features
 
-- Weekly layout (Monday to Sunday)
-- Editable task names (like Excel)
-- Assign points to each task
-- Mark tasks as completed
-- Automatic progress calculation per day
-- Add / remove task rows dynamically
-- Persistent storage using SQLite
-- Auto-save on every change
-- Clean Windows-style UI
+- `To Do` column plus 7 daily columns
+- Inline editable task inputs
+- Per-task priority toggle with light red highlighting
+- Daily work timer with play/pause and frozen past-day behavior
+- Weekly stats and progress tracking
+- `Work Queues` 3x4 planning grid
+- JSON import and export
+- SQLite persistence with auto-save behavior
+- Custom desktop window chrome and streamlined UI
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** WPF (.NET)
-- **Architecture:** MVVM
-- **Database:** SQLite (EF Core)
-- **Language:** C#
+- Frontend: WPF (.NET)
+- Architecture: MVVM
+- Language: C#
+- Database: SQLite with EF Core
 
 ---
 
 ## Project Structure
 
-```
+```text
 TimeTableApp
-│
-├── Data
-│   └── TimeTableDbContext.cs
-│
-├── Models
-│   ├── Task.cs
-│   ├── DayTaskStatus.cs
-│   └── PersistedTaskItem.cs
-│
-├── Services
-│   └── SQLiteDataService.cs
-│
-├── ViewModels
-│   ├── BaseViewModel.cs
-│   ├── RelayCommand.cs
-│   ├── DayColumnViewModel.cs
-│   └── MainViewModel.cs
-│
-├── Assets
-│   └── app.ico
-│
-└── MainWindow.xaml
+|-- Assets
+|   `-- app.ico
+|-- Behaviors
+|-- Converters
+|-- Data
+|   `-- TimeTableDbContext.cs
+|-- Models
+|   |-- AppExportData.cs
+|   |-- DayTaskStatus.cs
+|   |-- PersistedDayTimer.cs
+|   |-- PersistedTaskItem.cs
+|   `-- PersistedWorkQueueCell.cs
+|-- Services
+|   `-- SQLiteDataService.cs
+|-- ViewModels
+|   |-- BaseViewModel.cs
+|   |-- DayColumnViewModel.cs
+|   |-- MainViewModel.cs
+|   |-- RelayCommand.cs
+|   `-- WorkQueueCellViewModel.cs
+|-- MainWindow.xaml
+`-- MainWindow.xaml.cs
 ```
 
 ---
 
-## How It Works
+## Data Overview
 
-### Data Model
+- Each column is represented by `DayColumnViewModel`
+- Each task row is represented by `DayTaskStatus`
+- Work queue cells are represented by `WorkQueueCellViewModel`
+- Persistent data includes task state, priority, timer values, and queue cell values
 
-- Each day is represented using `DayColumnViewModel`
-- Each task row is wrapped in `DayTaskStatus`
-- Persistent data stored in SQLite as:
+Stored values include:
 
+```text
+DayIndex             -> Monday-Sunday / column index
+DisplayOrder         -> Task row order
+TaskName             -> Task title
+Points               -> Task score value
+IsDone               -> Completion state
+IsPriority           -> Priority flag
+ElapsedMilliseconds  -> Saved work timer value
 ```
-DayIndex (0-6)   -> Monday-Sunday
-DisplayOrder     -> Row position
-TaskName         -> Task title
-Points           -> Score value
-IsDone           -> Completion state
-```
-
-### Persistence Flow
-
-- App starts and loads data from SQLite
-- UI updates instantly via MVVM bindings
-- Any change (edit, checkbox, add/remove row) triggers:
-
-```
-DataChanged -> SaveAllDays()
-```
-
-- Data is rewritten to SQLite
 
 ---
 
-## Database
+## Persistence
 
-SQLite file is auto-created at:
+- The app loads saved data from SQLite at startup
+- Changes are saved automatically during normal interaction
+- Data can also be exported to and imported from JSON
 
-```
+SQLite file location:
+
+```text
 C:\Users\<User>\AppData\Local\TimeTableApp\timetable.db
 ```
-
-No manual setup required.
 
 ---
 
 ## Getting Started
 
-### 1. Clone the repository
-
-```bash
-git clone <your-repo-url>
-```
-
-### 2. Install dependencies
+### 1. Restore dependencies
 
 ```bash
 dotnet restore
 ```
 
-### 3. Run the app
+### 2. Run the app
 
 ```bash
 dotnet run
 ```
 
-Or open in Visual Studio and press Start.
+You can also open the project in Visual Studio and start it from there.
 
 ---
 
-## Build / Publish
+## Build
 
-To create a standalone executable:
+```bash
+dotnet build TimeTableApp.csproj
+```
 
-1. Right-click the project and select **Publish**
-2. Choose: Folder, Self-contained, win-x64
-3. Enable: Single file
+---
 
-Output: `TimeTableApp.exe`
+## Security Note
+
+You may see this warning during restore or build:
+
+```text
+Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability
+```
+
+That warning means the current SQLite native library version referenced by the project has a published advisory. The app can still build and run, but the package should be upgraded to a patched version.
+
+Recommended follow-up:
+
+- Update `SQLitePCLRaw.lib.e_sqlite3` directly, or
+- Update the parent SQLite / EF Core package that brings it in transitively
+
+Then verify with:
+
+```bash
+dotnet restore
+dotnet build TimeTableApp.csproj
+```
