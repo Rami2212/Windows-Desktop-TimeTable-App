@@ -134,18 +134,13 @@ namespace TimeTableApp.ViewModels
             ColumnDate.HasValue &&
             ColumnDate.Value.Date == DateTime.Today;
 
-        public bool IsTimerFrozen =>
-            ShowWorkTimer &&
-            ColumnDate.HasValue &&
-            DateTime.Today > ColumnDate.Value.Date;
+        public bool IsTimerFrozen => false;
 
-        public bool CanStartOrPauseTimer =>
-            ShowWorkTimer &&
-            ColumnDate.HasValue &&
-            DateTime.Today == ColumnDate.Value.Date &&
-            !IsTimerFrozen;
+        public bool CanStartOrPauseTimer => ShowWorkTimer;
 
-        public bool CanEditFrozenTimer => IsTimerFrozen;
+        public bool CanEditTimer => ShowWorkTimer && !IsTimerRunning;
+
+        public bool CanResetTimer => ShowWorkTimer && (IsTimerRunning || _storedElapsedMilliseconds > 0 || ElapsedWorkTime > TimeSpan.Zero);
 
         public bool HasUndoTask => _lastRemovedTask != null;
 
@@ -181,6 +176,7 @@ namespace TimeTableApp.ViewModels
         public RelayCommand TogglePriorityCommand { get; }
         public RelayCommand ToggleTimerCommand { get; }
         public RelayCommand ToggleTimerEditCommand { get; }
+        public RelayCommand ResetTimerCommand { get; }
 
         public int TotalCompletedPoints => DayTasks.Where(t => t.IsDone).Sum(t => t.Points);
         public int TotalPossiblePoints => DayTasks.Sum(t => t.Points);
@@ -216,7 +212,8 @@ namespace TimeTableApp.ViewModels
             UndoRemoveRowCommand = new RelayCommand(UndoLastRemovedTask, () => HasUndoTask);
             TogglePriorityCommand = new RelayCommand(TogglePriorityFromParameter);
             ToggleTimerCommand = new RelayCommand(ToggleWorkTimer, () => CanStartOrPauseTimer);
-            ToggleTimerEditCommand = new RelayCommand(ToggleTimerEdit, () => CanEditFrozenTimer);
+            ToggleTimerEditCommand = new RelayCommand(ToggleTimerEdit, () => CanEditTimer);
+            ResetTimerCommand = new RelayCommand(ResetTimer, () => CanResetTimer);
 
             _workTimer = new DispatcherTimer
             {
@@ -314,7 +311,7 @@ namespace TimeTableApp.ViewModels
                 var nowUtc = DateTime.UtcNow;
                 var currentElapsed = CalculateCurrentElapsed(nowUtc);
 
-                if (IsTimerFrozen || !CanStartOrPauseTimer)
+                if (!CanStartOrPauseTimer)
                 {
                     FinalizeRunningTimer(currentElapsed);
                     NotifyTimerSaved();
@@ -325,18 +322,14 @@ namespace TimeTableApp.ViewModels
                 }
             }
 
-            if (IsTimerFrozen)
-            {
-                _workTimer.Stop();
-                IsTimerRunning = false;
-            }
-
             OnPropertyChanged(nameof(ShowWorkTimer));
             OnPropertyChanged(nameof(IsTimerFrozen));
             OnPropertyChanged(nameof(CanStartOrPauseTimer));
-            OnPropertyChanged(nameof(CanEditFrozenTimer));
+            OnPropertyChanged(nameof(CanEditTimer));
+            OnPropertyChanged(nameof(CanResetTimer));
             ToggleTimerCommand.RaiseCanExecuteChanged();
             ToggleTimerEditCommand.RaiseCanExecuteChanged();
+            ResetTimerCommand.RaiseCanExecuteChanged();
         }
 
         public void NotifyMoved() => NotifyDataChanged();
@@ -380,7 +373,7 @@ namespace TimeTableApp.ViewModels
 
         private void ToggleTimerEdit()
         {
-            if (!CanEditFrozenTimer)
+            if (!CanEditTimer)
                 return;
 
             if (!IsEditingWorkTimer)
@@ -400,18 +393,35 @@ namespace TimeTableApp.ViewModels
             }
         }
 
+        private void ResetTimer()
+        {
+            if (!ShowWorkTimer)
+                return;
+
+            _storedElapsedMilliseconds = 0;
+            _runningStartedUtc = null;
+            IsEditingWorkTimer = false;
+            ElapsedWorkTime = TimeSpan.Zero;
+            PauseInternal();
+            NotifyTimerSaved();
+        }
+
         private void PauseInternal()
         {
             _workTimer.Stop();
             SetRunningState(false);
             OnPropertyChanged(nameof(IsTimerFrozen));
             OnPropertyChanged(nameof(CanStartOrPauseTimer));
+            OnPropertyChanged(nameof(CanEditTimer));
+            OnPropertyChanged(nameof(CanResetTimer));
             ToggleTimerCommand.RaiseCanExecuteChanged();
+            ToggleTimerEditCommand.RaiseCanExecuteChanged();
+            ResetTimerCommand.RaiseCanExecuteChanged();
         }
 
         private void OnWorkTimerTick(object? sender, EventArgs e)
         {
-            if (IsTimerFrozen || !CanStartOrPauseTimer)
+            if (!CanStartOrPauseTimer)
             {
                 FinalizeRunningTimer(CalculateCurrentElapsed(DateTime.UtcNow));
                 NotifyTimerSaved();
@@ -503,24 +513,10 @@ namespace TimeTableApp.ViewModels
             if (!_runningStartedUtc.HasValue)
                 return elapsed;
 
-            var effectiveUtcNow = utcNow;
-            var dayEndUtc = GetDayEndUtc();
-            if (dayEndUtc.HasValue && effectiveUtcNow > dayEndUtc.Value)
-                effectiveUtcNow = dayEndUtc.Value;
-
-            if (effectiveUtcNow <= _runningStartedUtc.Value)
+            if (utcNow <= _runningStartedUtc.Value)
                 return elapsed;
 
-            return elapsed.Add(effectiveUtcNow - _runningStartedUtc.Value);
-        }
-
-        private DateTime? GetDayEndUtc()
-        {
-            if (!ColumnDate.HasValue)
-                return null;
-
-            var localDayEnd = ColumnDate.Value.Date.AddDays(1);
-            return localDayEnd.ToUniversalTime();
+            return elapsed.Add(utcNow - _runningStartedUtc.Value);
         }
 
         private void ClearUndoState()

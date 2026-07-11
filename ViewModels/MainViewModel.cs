@@ -442,7 +442,9 @@ namespace TimeTableApp.ViewModels
 
             foreach (var day in Days)
             {
-                var milliseconds = timerMap.TryGetValue(day.DayIndex, out var elapsed) ? elapsed : 0;
+                var milliseconds = timerMap.TryGetValue(day.DayIndex, out var elapsed)
+                    ? elapsed
+                    : 0;
                 var timerState = runningMap.TryGetValue(day.DayIndex, out var persistedTimer)
                     ? persistedTimer
                     : null;

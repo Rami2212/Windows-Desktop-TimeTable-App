@@ -530,6 +530,7 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <Button Grid.Column="0"
@@ -578,6 +579,17 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
+                            </Button>
+
+                            <Button Grid.Column="3"
+                                    Style="{StaticResource IconActionButtonStyle}"
+                                    Margin="6,0,0,0"
+                                    Command="{Binding ResetTimerCommand}"
+                                    ToolTip="Reset timer">
+                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="&#xE777;"/>
                             </Button>
                         </Grid>
                     </Border>

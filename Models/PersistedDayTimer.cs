@@ -13,5 +13,7 @@ namespace TimeTableApp.Models
         public bool IsRunning { get; set; }
 
         public DateTime? RunningStartedUtc { get; set; }
+
+        public DateTime? TimerDate { get; set; }
     }
 }
