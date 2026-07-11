@@ -41,11 +41,13 @@ namespace TimeTableApp.Services
                     DayIndex INTEGER NOT NULL UNIQUE,
                     ElapsedMilliseconds INTEGER NOT NULL DEFAULT 0,
                     IsRunning INTEGER NOT NULL DEFAULT 0,
-                    RunningStartedUtc TEXT NULL
+                    RunningStartedUtc TEXT NULL,
+                    TimerDate TEXT NULL
                 )");
             try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN ElapsedMilliseconds INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN IsRunning INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN RunningStartedUtc TEXT NULL"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE PersistedDayTimers ADD COLUMN TimerDate TEXT NULL"); } catch { }
         }
 
         public List<PersistedTaskItem> LoadAllDays()
@@ -183,7 +185,8 @@ namespace TimeTableApp.Services
                         DayIndex = day.DayIndex,
                         ElapsedMilliseconds = day.StoredElapsedMilliseconds,
                         IsRunning = day.IsTimerRunning,
-                        RunningStartedUtc = day.RunningStartedUtc
+                        RunningStartedUtc = day.RunningStartedUtc,
+                        TimerDate = day.ColumnDate?.Date
                     }));
 
             db.SaveChanges();
