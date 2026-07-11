@@ -255,8 +255,7 @@ namespace TimeTableApp.ViewModels
                         DayIndex = day.DayIndex,
                         ElapsedMilliseconds = day.StoredElapsedMilliseconds,
                         IsRunning = day.IsTimerRunning,
-                        RunningStartedUtc = day.RunningStartedUtc,
-                        TimerDate = day.ColumnDate?.Date
+                        RunningStartedUtc = day.RunningStartedUtc
                     })
                     .ToList(),
                 Labels = new Dictionary<string, string>
@@ -443,24 +442,17 @@ namespace TimeTableApp.ViewModels
 
             foreach (var day in Days)
             {
+                var milliseconds = timerMap.TryGetValue(day.DayIndex, out var elapsed)
+                    ? elapsed
+                    : 0;
                 var timerState = runningMap.TryGetValue(day.DayIndex, out var persistedTimer)
                     ? persistedTimer
                     : null;
 
-                var hasMatchingTimerDate =
-                    timerState?.TimerDate.HasValue == true &&
-                    day.ColumnDate.HasValue &&
-                    timerState.TimerDate.Value.Date == day.ColumnDate.Value.Date;
-
-                var milliseconds = hasMatchingTimerDate &&
-                                   timerMap.TryGetValue(day.DayIndex, out var elapsed)
-                    ? elapsed
-                    : 0;
-
                 day.LoadTimerState(
                     TimeSpan.FromMilliseconds(milliseconds),
-                    hasMatchingTimerDate && (timerState?.IsRunning ?? false),
-                    hasMatchingTimerDate ? timerState?.RunningStartedUtc : null);
+                    timerState?.IsRunning ?? false,
+                    timerState?.RunningStartedUtc);
             }
         }
 
