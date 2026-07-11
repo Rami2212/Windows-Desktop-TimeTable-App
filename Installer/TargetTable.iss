@@ -1,5 +1,5 @@
 #define MyAppName "Target Table"
-#define MyAppVersion "3.0"
+#define MyAppVersion "3.1.0"
 #define MyAppPublisher "Ramitha-Iddamalgoda"
 #define MyAppExeName "TimeTableApp.exe"
 #define MyAppId "{{D7549070-7B07-4D55-8B65-4522B36509B8}"
